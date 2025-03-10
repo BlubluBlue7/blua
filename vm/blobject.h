@@ -1,8 +1,5 @@
 ﻿#pragma once
 
-#define LLONG_MAX
-#include <cstddef>
-
 #include "blgc.h"
 #include "bltype.h"
 #include "blua.h"

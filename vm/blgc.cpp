@@ -1,5 +1,4 @@
 ﻿#include "blgc.h"
-
 #include "blmem.h"
 #include "blstate.h"
 #include "bltype.h"

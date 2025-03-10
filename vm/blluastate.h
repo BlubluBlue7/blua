@@ -5,6 +5,7 @@
 #include "blobject.h"
 #include "blgc.h"
 #include "bltable.h"
+#include "blstate.h"
 
 class BLTValue;
 class BLGlobalState;
@@ -15,7 +16,7 @@ public:
     int func;
     int top;
     int nResults;
-    int callStatus;
+    CALL_STATUS callStatus;
     CallInfo* next;
     CallInfo* prev;
 };
@@ -27,22 +28,18 @@ public:
     int topIndex;
 
     lua_longjmp* errorJmp;
+    ptrdiff_t errorfunc;
+    BLGlobalState* globalState;
 
-    int status;
+    CALL_STATUS status;
     BLLuaState* prev;
-    
     CallInfo* ci;
-    
     CallInfo base_ci;
     int nci;
     int nCalls;
     GCObject* gclist;
     
-    BLGlobalState* globalState;
-    
-    ptrdiff_t errorfunc;
     void Init();
-
     int SetTable(int idx);
     lua_Integer GetIntFromStack(int addr);
     char* GetStringFromStack(int addr);
@@ -56,10 +53,8 @@ public:
     BLTValue* AddToStack();
     void Pop();
     int GetStackSize();
-
-    int PCall(BLLuaState* ls, int nArgs, int nResults);
     void NewCI(int funcIndex, int nResults);
-
+    CALL_STATUS PCall(BLLuaState* ls, int nArgs, int nResults);
     int PreCall(BLLuaState* L, int funcIndex, int nresult);
-    int PostCall(BLLuaState* L, int first_result, int nresult);
+    CALL_STATUS PostCall(BLLuaState* L, int first_result, int nresult);
 };

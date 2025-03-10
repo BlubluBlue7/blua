@@ -33,6 +33,11 @@ BLLuaState* BLMem::NewLuaState()
     return l;
 }
 
+void BLMem::CloseLuaState(LG* lg)
+{
+    delete lg;
+}
+
 BLTString* BLMem::NewString(BLLuaState* L, LuaType::Type type)
 {
     BLTString* ts = new BLTString();

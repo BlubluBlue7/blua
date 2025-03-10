@@ -1,6 +1,7 @@
 ﻿#pragma once
 #include <csetjmp>
-
+#include "blobject.h"
+#include "blstate.h"
 
 #define LUA_TRY(L, c, a) if (_setjmp((c)->b) == 0) { a } 
 
@@ -15,5 +16,5 @@ class lua_longjmp
 public:
     lua_longjmp* previous;
     jmp_buf b;
-    int status;
+    CALL_STATUS status;
 };

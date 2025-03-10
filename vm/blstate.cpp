@@ -1,10 +1,15 @@
 ﻿#include "blstate.h"
-
-#include "blexception.h"
+#include "blgc.h"
+#include "blmem.h"
 #include "blobject.h"
-#include "bltype.h"
+#include "blstring.h"
 
 LG* BLGlobalState::lg = nullptr;
+void BLGlobalState::CloseLuaState()
+{
+    BLMem::CloseLuaState(lg);
+}
+
 void BLGlobalState::InitStr()
 {
     strt.nuse = 0;
@@ -28,10 +33,16 @@ void BLGlobalState::FixGC(GCObject* o)
     GCHelper::reset_bits(o->marked, WHITE_BITS);
 }
 
-void BLGlobalState::CloseLuaState()
+void BLGlobalState::SetPause()
 {
-    delete BLGlobalState::lg;
-    BLGlobalState::lg = nullptr;
+    // 计算新的内存阈值（基于当前估计值和用户配置的暂停参数）
+    l_mem estimate = GCestimate / GCPAUSE;
+    // 应用步进乘数并防止溢出
+    estimate = (estimate * GCstepmul) >= MAX_LMEM ? MAX_LMEM : estimate * GCstepmul;
+
+    // 计算新的债务：当前估计值 - 调整后的阈值
+    l_mem debt = GCestimate - estimate;
+    SetDebt(debt);
 }
 
 l_mem BLGlobalState::GetDebt()
@@ -48,23 +59,6 @@ l_mem BLGlobalState::GetDebt()
     return debt; // 需要回收的内存字节数
 }
 
-void BLGlobalState::UpdateDebt(l_mem value)
-{
-    GCdebt = GCdebt + value;
-}
-
-void BLGlobalState::SetPause()
-{
-    // 计算新的内存阈值（基于当前估计值和用户配置的暂停参数）
-    l_mem estimate = GCestimate / GCPAUSE;
-    // 应用步进乘数并防止溢出
-    estimate = (estimate * GCstepmul) >= MAX_LMEM ? MAX_LMEM : estimate * GCstepmul;
-
-    // 计算新的债务：当前估计值 - 调整后的阈值
-    l_mem debt = GCestimate - estimate;
-    SetDebt(debt);
-}
-
 void BLGlobalState::SetDebt(l_mem debt)
 {
     // 获取当前总内存使用量（包括已分配但未回收的内存）
@@ -73,6 +67,11 @@ void BLGlobalState::SetDebt(l_mem debt)
     this->totalbytes = totalbytes - debt;
     // 设置新的待处理债务
     GCdebt = debt;
+}
+
+void BLGlobalState::UpdateDebt(l_mem value)
+{
+    GCdebt = GCdebt + value;
 }
 
 lu_mem BLGlobalState::GetTotalBytes()

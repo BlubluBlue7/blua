@@ -1,6 +1,7 @@
 ﻿#pragma once
 #include <type_traits>
 
+#include "bltable.h"
 #include "blua.h"
 
 class GCObject;
@@ -86,8 +87,8 @@ public:
 template<typename T>
 constexpr bool is_collectable() noexcept {
     return std::is_same_v<T, BLLuaState> ||
-           std::is_same_v<T, BLTString>;
-           // std::is_same_v<T, Table> ||
+           std::is_same_v<T, BLTString> ||
+           std::is_same_v<T, BLTable>;
            // std::is_same_v<T, LClosure> ||
            // std::is_same_v<T, CClosure>;
 }

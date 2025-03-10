@@ -6,6 +6,7 @@ class BLMem
 {
 public:
     static BLLuaState* NewLuaState();
+    static void CloseLuaState(LG* lg);
     static BLTString* NewString(BLLuaState* L, LuaType::Type type);
     static BLTable* NewTable(BLLuaState* L);
 

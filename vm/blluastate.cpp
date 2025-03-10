@@ -21,7 +21,7 @@ void BLLuaState::Init()
     type = LuaType::TTHREAD;
 
     prev = nullptr;
-    status = CALL_OK;
+    status = CALL_STATUS::CALL_OK;
     errorJmp = nullptr;
     errorfunc = 0;
 }
@@ -181,12 +181,12 @@ BLTValue* BLLuaState::AddToStack()
 void BLLuaState::NewCI(int funcIndex, int nResults)
 {
     CallInfo* nci = new CallInfo();
-    ci->nResults = nResults;
-    ci->func = funcIndex;
-    ci->callStatus = CALL_STATUS::CALL_OK;
-    ci->top = topIndex + MIN_STACK;
-    ci->next = nci;
+    nci->nResults = nResults;
+    nci->func = funcIndex;
+    nci->callStatus = CALL_STATUS::CALL_OK;
+    nci->top = topIndex + MIN_STACK;
     nci->prev = ci;
+    ci->next = nci;
     ci = nci;
 }
 
@@ -214,7 +214,7 @@ int BLLuaState::PreCall(BLLuaState* L, int funcIndex, int nresult) {
     return 0;
 }
 
-int BLLuaState::PostCall(BLLuaState* L, int first_result, int nresult) {
+CALL_STATUS BLLuaState::PostCall(BLLuaState* L, int first_result, int nresult) {
     int func = ci->func;
     int nwant = ci->nResults;
     BLTValue* firstResult = GetTValueFromStackByIndex(first_result);
@@ -292,14 +292,13 @@ int BLLuaState::PostCall(BLLuaState* L, int first_result, int nresult) {
     L->ci = ci->prev;
     L->ci->next = NULL;
     
-    BLGlobalState* g = L->globalState;
     delete ci;
 
     return CALL_STATUS::CALL_OK;
 }
 
 
-static int f_call(BLLuaState* L, void* ud) {
+static CALL_STATUS f_call(BLLuaState* L, void* ud) {
     CallS* c = (CallS*)ud;
     if(++L->nCalls > 20000) {
         // error
@@ -312,16 +311,17 @@ static int f_call(BLLuaState* L, void* ud) {
     L->nCalls--;
     return CALL_STATUS::CALL_OK;
 }
-typedef int (*Pfunc)(BLLuaState* L, void* ud);
-int BLLuaState::PCall(BLLuaState* ls, int nArgs, int nResults)
+typedef CALL_STATUS (*Pfunc)(BLLuaState* L, void* ud);
+CALL_STATUS BLLuaState::PCall(BLLuaState* ls, int nArgs, int nResults)
 {
-    int status = CALL_STATUS::CALL_OK;
+    CALL_STATUS status = CALL_STATUS::CALL_OK;
     CallS c;
     c.funcIndex = ls->topIndex - nArgs - 1;
     c.nResults = nResults;
 
     // luaD_pcall
     CallInfo* old_ci = ls->ci;
+    ptrdiff_t old_errorfunc = ls->errorfunc;
     
     // luaD_rawrunprotected    
     int old_nCalls = ls->nCalls;
@@ -329,12 +329,11 @@ int BLLuaState::PCall(BLLuaState* ls, int nArgs, int nResults)
     lj.previous = ls->errorJmp;
     lj.status = CALL_STATUS::CALL_OK;
     ls->errorJmp = &lj;
-    Pfunc f = &f_call;
     void* ud = &c;
     LUA_TRY(
         ls,
         ls->errorJmp,
-        (*f)(ls, ud);
+        f_call(ls, ud);
     )
     ls->errorJmp = lj.previous;
     ls->nCalls = old_nCalls;
@@ -343,7 +342,10 @@ int BLLuaState::PCall(BLLuaState* ls, int nArgs, int nResults)
     if(status != CALL_STATUS::CALL_OK)
     {
         // error
+        // ls->ci = old_ci;
+        // ls->
     }
 
+    ls->errorfunc = old_errorfunc;
     return status;
 }

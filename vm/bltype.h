@@ -84,4 +84,4 @@ namespace LuaType {
                (t.base() == Base::TSTRING && 
                std::is_same_v<Sub, StringSub>);
     }
-} // namespace LuaType
+}
