@@ -1,0 +1,12 @@
+﻿  blmem.cpp
+D:\Study\Github\bblua\vm\blexception.h(16,12): warning C4099: “lua_longjmp”: 类型名称以前使用“class”现在使用的是“struct”
+  (编译源文件“vm/blmem.cpp”)
+  D:\Study\Github\bblua\vm\blexception.h(13,7):
+  参见“lua_longjmp”的声明
+  
+C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.38.33130\include\limits.h(41,1): warning C4005: “LLONG_MAX”: 宏重定义
+  (编译源文件“vm/blmem.cpp”)
+  D:\Study\Github\bblua\vm\blobject.h(3,1):
+  参见“LLONG_MAX”的前一个定义
+  
+  bblua.vcxproj -> D:\Study\Github\bblua\x64\Debug\bblua.exe
