@@ -1,11 +1,11 @@
 ﻿#pragma once
 #include <type_traits>
 
-#include "bltable.h"
 #include "blua.h"
 
 class GCObject;
 class BLLuaState;
+class BLTable;
 class BLTString;
 class BLTValue;
 enum class State : int {

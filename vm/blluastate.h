@@ -4,8 +4,6 @@
 #include "blexception.h"
 #include "blobject.h"
 #include "blgc.h"
-#include "bltable.h"
-#include "blstate.h"
 
 class BLTValue;
 class BLGlobalState;

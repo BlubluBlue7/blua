@@ -1,8 +1,8 @@
 ﻿#pragma once
 #include <csetjmp>
 #include "blobject.h"
-#include "blstate.h"
 
+enum class CALL_STATUS;
 #define LUA_TRY(L, c, a) if (_setjmp((c)->b) == 0) { a } 
 
 #ifdef _WINDOWS_PLATFORM_ 

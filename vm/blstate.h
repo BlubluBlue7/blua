@@ -1,6 +1,7 @@
 ﻿#pragma once
 
 #include "blluastate.h"
+#include "blstring.h"
 
 class BLGlobalState;
 class BLTValue;
