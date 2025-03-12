@@ -1,6 +1,5 @@
 ﻿#pragma once
 #include <type_traits>
-
 #include "blua.h"
 
 class GCObject;
@@ -106,7 +105,6 @@ public:
     lu_byte marked;
 
     virtual ~GCObject() = default;
-    static GCObject* NewObj(BLLuaState* L, int type, size_t size);
     void ChangeWhite();
 };
 

@@ -3,17 +3,6 @@
 #include "blstate.h"
 #include "bltype.h"
 
-GCObject* GCObject::NewObj(BLLuaState* L, int type, size_t size)
-{
-    BLGlobalState* g = L->globalState;
-    GCObject* obj = new GCObject();
-    obj->marked = 0;
-    obj->next = g->allgc;
-    obj->type = type;
-    g->allgc = obj;
-    
-    return obj;
-}
 
 void GCObject::ChangeWhite()
 {
@@ -199,7 +188,7 @@ GCObject** BLGC::SweepList(BLLuaState* L, GCObject** p, size_t count)
         {
             (*p)->marked &=  ~(BLACK_BIT | WHITE_BITS);
             (*p)->marked |= g->GetCurrentWhite();
-            p = &(*p)->next;
+            *p = (*p)->next;
         }
         count--;
     }
