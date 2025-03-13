@@ -2,7 +2,8 @@
 
 #include "blluastate.h"
 #include "math.h"
-#include "../parser/blopcodes.h"
+#define MAXABITS (sizeof(int) * CHAR_BIT - 1)
+#define MAXASIZE (1u << MAXABITS)
 
 int luaO_ceillog2(int value) {
     int i = 0;
@@ -147,7 +148,7 @@ Node* BLTable::hashPointer(void* p)
     return GetNodeByIndex(t & ((1 << nodeSize) - 1));
 }
 
-BLTValue* BLTable::GetValue(BLLuaState* L, BLTValue* key)
+BLTValue* BLTable::GetValue(BLLuaState* L, const BLTValue* key)
 {
     switch(key->type)
     {
@@ -255,11 +256,11 @@ BLTValue* BLTable::GetGeneric(BLLuaState* L, BLTValue* key)
     return &luaO_nilobject;
 }
 
-int BLTable::SetInt(BLLuaState* L, int key, const BLTValue* value)
+int BLTable::SetInt(BLLuaState* L, int key, BLTValue* value)
 {
     const BLTValue* p = GetInt(L, key);
     BLTValue* cell = nullptr;
-    if(p != luaO_nilobject)
+    if(p != &luaO_nilobject)
     {
         cell = (BLTValue*)p;
     }
@@ -268,7 +269,7 @@ int BLTable::SetInt(BLLuaState* L, int key, const BLTValue* value)
         BLTValue k;
         k.type = LuaType::NUMINT;
         k.value.i = key;
-        cell = NewKey(L, k);
+        cell = NewKey(L, &k);
     }
 
     cell->type = value->type;
@@ -276,10 +277,10 @@ int BLTable::SetInt(BLLuaState* L, int key, const BLTValue* value)
     return 1;
 }
 
-BLTValue* BLTable::SetValue(BLLuaState* L, const BLTValue* key)
+BLTValue* BLTable::SetValue(BLLuaState* L, BLTValue* key)
 {
-    const BLTValue* p = GetValue(key);
-    if(p != luaO_nilobject)
+    const BLTValue* p = GetValue(L, key);
+    if(p != &luaO_nilobject)
     {
         return (BLTValue*)p;
     }
@@ -289,6 +290,47 @@ BLTValue* BLTable::SetValue(BLLuaState* L, const BLTValue* key)
     }
 }
 
+BLTValue* BLTable::NewKey(BLLuaState* L, BLTValue* key)
+{
+    BLTValue k;
+    if(key->IsNumber())
+    {
+        k.value.i = l_hashfloat(key->value.n);
+        k.type = LuaType::NUMINT;
+        key = &k;
+    }
+
+    Node* n = GetNode(L, key);
+    if(!n->val.IsNil())
+    {
+        int64_t lastFree = GetLastFree();
+    }
+}
+
+int64_t BLTable::GetLastFree()
+{
+    if(lastFree == -1)
+    {
+        return -1;
+    }
+
+    while(true)
+    {
+        if(lastFree == 0)
+        {
+            break;
+        }
+
+        lastFree--;
+        if(node[lastFree]->key.tvk.type == LuaType::TNIL)
+        {
+            return lastFree;
+        }
+    }
+
+
+    return -1;
+}
 
 // typedef struct Auxnode {
 //     struct Table* t;
@@ -300,3 +342,173 @@ BLTValue* BLTable::SetValue(BLLuaState* L, const BLTValue* key)
 //     setnodesize(L, n->t, n->size);
 //     return 0;
 // }
+
+int64_t BLTable::numsarray(int* nums)
+{
+    int totaluse = 0;
+    uint64_t idx = 0;
+    for(uint64_t i = 0, twotoi = 1; twotoi <= arraySize; ++i, twotoi *= 2)
+    {
+        for(; idx < twotoi; idx++)
+        {
+            if(array[idx]->IsNil())
+            {
+                totaluse++;
+                nums[i]++;
+            }
+        }
+    }
+
+    return totaluse;
+}
+int64_t BLTable::numshash(int* nums)
+{
+    int totaluse = 0;
+    for(int i = 0; i < 1 << nodeSize; i++)
+    {
+        Node* n = node[i];
+        if(n->val.IsNil())
+        {
+            totaluse++;
+            if(n->key.tvk.IsInteger())
+            {
+                lua_Integer ikey = n->key.tvk.value.i;
+                if(ikey > 0)
+                {
+                    int temp = luaO_ceillog2(ikey);
+
+                    if(temp < MAXABITS +1 && temp >= 0)
+                    {
+                        nums[temp]++;
+                    }
+                }
+            }
+        }
+    }
+
+    return totaluse;
+}
+uint64_t BLTable::compute_array_size(int* nums, int* array_used_num)
+{
+    uint64_t array_size = 0;
+    uint64_t sum_array_used = 0;
+    uint64_t sum_int_keys = 0;
+    for(uint64_t i = 0, twotoi = 1; i < MAXABITS + 1; i++, twotoi *= 2)
+    {
+        sum_int_keys += nums[i];
+        if(sum_int_keys > twotoi / 2)
+        {
+            array_size = twotoi;
+            sum_array_used = sum_int_keys;
+        }
+    }
+    *array_used_num = sum_array_used;
+    return array_size;
+}
+void BLTable::rehash(BLLuaState* L, BLTValue* key)
+{
+    int nums[MAXABITS + 1];
+    for(int i = 0; i < MAXABITS + 1; i++)
+    {
+        nums[i] = 0;
+    }
+    int totaluse = 0;
+    int array_used_num = 0;
+
+    totaluse = numsarray(nums);
+    totaluse += numshash(nums);
+
+    totaluse++;
+    if(key->IsInteger())
+    {
+        int temp = luaO_ceillog2(key->value.i);
+        if(temp < MAXABITS - 1 && temp >= 0)
+        {
+            nums[temp]++;
+        }
+    }
+
+    uint64_t asize = compute_array_size(nums, &array_used_num);
+    // luaH_resize(L, t, asize, totaluse - array_used_num);
+}
+uint64_t BLTable::arrayindex(BLTValue* key)
+{
+    if(key->IsInteger())
+    {
+        lua_Integer k = key->value.i;
+        if((k > 0) && k < MAXASIZE)
+        {
+            return k;
+        }
+    }
+
+    return 0;
+}
+uint64_t BLTable::findindex(BLLuaState* L, BLTValue* key)
+{
+    uint64_t i = arrayindex(key);
+    if(i != 0 && i<= arraySize)
+    {
+        return i;
+    } else
+    {
+        Node* n = GetNode(L, key);
+        while(true)
+        {
+            if(n->key.tvk.EqualTo(key))
+                // ||(ttisdeadkey(getkey(n)) && iscollectable(key) && (gcvalue(getkey(n)) == gcvalue(key)))) {)
+            {
+                i = n - node[0];
+                return i + 1; + arraySize;
+            }
+
+            n += n->key.nk.next;
+        }
+    }
+
+    return 0;
+}
+int64_t BLTable::luaH_next(BLLuaState* L, BLTValue* key)
+{
+    uint64_t i = findindex(L, key);
+    for(; i < arraySize; ++i)
+    {
+        if(!array[i]->IsNil())
+        {
+            key->value.i = i + 1;
+            // setobj(key + 1, &t->array[i]);
+            return 1;
+        }
+    }
+
+    for(i-=arraySize; i < 1 << nodeSize; i++)
+    {
+        Node* n = node[i];
+        if(!n->val.IsNil())
+        {
+            // setobj(key, getwkey(n));
+            // setobj(key + 1, getval(n));
+            return 1;
+        }
+    }
+    
+    return 0;
+}
+
+int64_t BLTable::luaH_getn(BLLuaState* L)
+{
+    int n = 0;
+    for(uint64_t i = 0; i < arraySize; i++)
+    {
+        if(!array[i]->IsNil())
+        {
+            n++;
+        }
+        else
+        {
+            return n;
+        }
+    }
+
+    return n;
+}

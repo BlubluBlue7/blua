@@ -75,6 +75,11 @@ bool BLTValue::IsNumber()
     return LuaType::is_number(type);
 }
 
+bool BLTValue::IsNil()
+{
+    return type == LuaType::TNIL;
+}
+
 bool BLTValue::IsInteger()
 {
     return type == LuaType::NUMINT;

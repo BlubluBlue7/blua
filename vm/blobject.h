@@ -30,6 +30,7 @@ public:
     bool IsNan();
     bool IsInteger();
     bool IsShrStr();
+    bool IsNil();
 };
 
 extern inline BLTValue luaO_nilobject = { { nullptr }, LuaType::TNIL };

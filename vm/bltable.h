@@ -120,13 +120,23 @@ public:
 
     void SetNodeSize(BLLuaState* L, int size);
     
-    BLTValue* GetValue(BLLuaState* L, BLTValue* key);
+    BLTValue* GetValue(BLLuaState* L, const BLTValue* key);
     BLTValue* GetInt(BLLuaState* L, int key);
     BLTValue* GetStr(BLLuaState* L, BLTString* str);
     BLTValue* GetGeneric(BLLuaState* L, BLTValue* key);
 
-    BLTValue* SetValue(BLLuaState* L);
-    int SetInt(BLLuaState* L, int key, const BLTValue* value);
+    BLTValue* SetValue(BLLuaState* L, BLTValue* key);
+    int SetInt(BLLuaState* L, int key, BLTValue* value);
 
-    BLTValue* NewKey(BLLuaState* L);
+    BLTValue* NewKey(BLLuaState* L, BLTValue* key);
+    int64_t GetLastFree();
+
+    int64_t numsarray(int* nums);
+    int64_t numshash(int* nums);
+    uint64_t compute_array_size(int* nums, int* array_used_num);
+    void rehash(BLLuaState* L, BLTValue* key);
+    uint64_t arrayindex(BLTValue* key);
+    uint64_t findindex(BLLuaState* L, BLTValue* key);
+    int64_t luaH_next(BLLuaState* L, BLTValue* key);
+    int64_t luaH_getn(BLLuaState* L);
 };
