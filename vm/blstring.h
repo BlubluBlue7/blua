@@ -37,4 +37,7 @@ public:
     static BLTString* CreateLongStr(BLLuaState* L, const char* data, size_t len);
     static BLTString* CreateStr(BLLuaState* L, const char* data, size_t len, LuaType::Type type, unsigned int hash);
     static size_t GetLStringSize(size_t l);
+
+    bool EqualShrStr(BLTString* str);
+    bool EqualLngStr(BLTString* str);
 };

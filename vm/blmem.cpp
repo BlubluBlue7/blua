@@ -71,6 +71,11 @@ BLTable* BLMem::NewTable(BLLuaState* L)
     return table;
 }
 
+void BLMem::FreeTable()
+{
+    
+}
+
 void BLMem::FreeObject(BLLuaState* L, GCObject* o, l_mem size)
 {
     delete o;

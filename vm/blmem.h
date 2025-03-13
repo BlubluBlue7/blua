@@ -11,4 +11,5 @@ public:
     static BLTable* NewTable(BLLuaState* L);
 
     static void FreeObject(BLLuaState* L, GCObject* o, l_mem size);
+    static void FreeTable();
 };

@@ -24,8 +24,12 @@ class BLTValue
 {
 public:
     BLValue value;
-    int type;
+    LuaType::Type type = LuaType::TNIL;
     bool EqualTo(BLTValue* other);
+    bool IsNumber();
+    bool IsNan();
+    bool IsInteger();
+    bool IsShrStr();
 };
 
 extern inline BLTValue luaO_nilobject = { { nullptr }, LuaType::TNIL };

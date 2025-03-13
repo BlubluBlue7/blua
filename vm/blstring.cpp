@@ -29,10 +29,22 @@ int BLTString::HashLngStr(BLLuaState* L)
     return hash;
 }
 
+bool BLTString::EqualShrStr(BLTString* str)
+{
+    return (this == str) || (shrlen == str->shrlen && strcmp(data, str->data) == 0);
+}
+
+bool BLTString::EqualLngStr(BLTString* str)
+{
+    return (this == str) || (u.lnglen == str->u.lnglen && strcmp(data, str->data) == 0);
+}
+
+
 unsigned BLTString::GetHash(BLLuaState* L, const char* str, unsigned int l, unsigned int h)
 {
     h = h ^ l;
     unsigned int step = (l >> 5) + 1;
+    // 然后是小于32B的字符串都会参与哈希运算，大于等于32B的字符串则会通过至少相隔一个字符的方式进行哈希运算，其计算方式也很简单为(l>>5)+1
     for (int i = 0; i < l; i = i + step) {
         h ^= (h << 5) + (h >> 2) + (lu_byte)str[i];
     }

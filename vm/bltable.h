@@ -126,6 +126,7 @@ public:
     BLTValue* GetGeneric(BLLuaState* L, BLTValue* key);
 
     BLTValue* SetValue(BLLuaState* L);
+    int SetInt(BLLuaState* L, int key, const BLTValue* value);
 
     BLTValue* NewKey(BLLuaState* L);
 };
